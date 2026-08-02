@@ -1,0 +1,9 @@
+{
+  "name": "mav-maths-challenge",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Grade 5 maths practice app for the Maths Association of Victoria competition, with cross-device progress sync via Netlify Functions + Netlify Blobs.",
+  "dependencies": {
+    "@netlify/blobs": "^10.7.9"
+  }
+}
