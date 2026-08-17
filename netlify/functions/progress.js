@@ -9,6 +9,17 @@
 
 const { getStore } = require('@netlify/blobs');
 
+// Normally Netlify injects Blobs credentials automatically. On some sites/deploys
+// that automatic wiring doesn't attach, which throws "MissingBlobsEnvironmentError".
+// If a BLOBS_TOKEN env var is set (Site settings -> Environment variables), use it
+// to configure the store explicitly as a guaranteed-to-work fallback.
+function openStore(name) {
+  if (process.env.BLOBS_TOKEN) {
+    return getStore({ name, consistency: 'strong', siteID: process.env.SITE_ID, token: process.env.BLOBS_TOKEN });
+  }
+  return getStore({ name, consistency: 'strong' });
+}
+
 const CODE_RE = /^[A-Z2-9]{8}$/; // matches the codes generated client-side
 const MAX_BODY_BYTES = 300000; // generous ceiling; a typical progress payload is a few KB
 
@@ -37,7 +48,7 @@ exports.handler = async (event) => {
 
   // Strong consistency avoids the (up to ~60s) eventual-consistency propagation
   // window — worth the small overhead given how infrequently this is called.
-  const store = getStore({ name: 'mav-progress', consistency: 'strong' });
+  const store = openStore('mav-progress');
 
   try {
     if (event.httpMethod === 'GET') {
@@ -50,42 +61,4 @@ exports.handler = async (event) => {
     }
 
     if (event.httpMethod === 'POST') {
-      if (event.body && event.body.length > MAX_BODY_BYTES) {
-        return {
-          statusCode: 413,
-          headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ error: 'Payload too large' }),
-        };
-      }
-      let payload;
-      try {
-        payload = JSON.parse(event.body || '{}');
-      } catch (e) {
-        return {
-          statusCode: 400,
-          headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ error: 'Body must be valid JSON' }),
-        };
-      }
-      payload.updatedAt = Date.now();
-      await store.setJSON(code, payload);
-      return {
-        statusCode: 200,
-        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ok: true, updatedAt: payload.updatedAt }),
-      };
-    }
-
-    return {
-      statusCode: 405,
-      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: 'Method not allowed' }),
-    };
-  } catch (err) {
-    return {
-      statusCode: 500,
-      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: 'Server error', detail: String(err && err.message || err) }),
-    };
-  }
-};
+      if (event.body && event.body.length >
