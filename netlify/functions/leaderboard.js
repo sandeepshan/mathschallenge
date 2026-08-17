@@ -20,6 +20,17 @@
 
 const { getStore } = require('@netlify/blobs');
 
+// Normally Netlify injects Blobs credentials automatically. On some sites/deploys
+// that automatic wiring doesn't attach, which throws "MissingBlobsEnvironmentError".
+// If a BLOBS_TOKEN env var is set (Site settings -> Environment variables), use it
+// to configure the store explicitly as a guaranteed-to-work fallback.
+function openStore(name) {
+  if (process.env.BLOBS_TOKEN) {
+    return getStore({ name, consistency: 'strong', siteID: process.env.SITE_ID, token: process.env.BLOBS_TOKEN });
+  }
+  return getStore({ name, consistency: 'strong' });
+}
+
 const STUDENT_ID_RE = /^stu_[A-Z2-9]{8,16}$/;
 const MAX_BODY_BYTES = 20000;
 const MAX_STUDENTS = 2000; // safety ceiling so the blob can't grow unbounded
@@ -91,7 +102,7 @@ exports.handler = async (event) => {
     return { statusCode: 204, headers: CORS_HEADERS, body: '' };
   }
 
-  const store = getStore({ name: 'mav-leaderboard', consistency: 'strong' });
+  const store = openStore('mav-leaderboard');
   const KEY = 'all-students';
   const currentWeekStart = mondayOf(todayUTC());
 
