@@ -1,0 +1,9 @@
+{
+  "name": "maths-champions",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Grade 5 maths practice app with automatic cross-device progress sync via Netlify Functions + Netlify Blobs.",
+  "dependencies": {
+    "@netlify/blobs": "^10.7.9"
+  }
+}

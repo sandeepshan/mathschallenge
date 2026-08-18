@@ -1,5 +1,5 @@
-/* MAV Maths Challenge — service worker
-   Strategy: network-first (so Vivaan always gets the latest version when online),
+/* Maths Champions — service worker
+   Strategy: network-first (so every student always gets the latest version when online),
    falling back to a cached copy when offline. This makes the app fully usable
    without wifi/data once it's been opened at least once. */
 
